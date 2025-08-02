@@ -1,0 +1,24 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Build FacePay Terminal",
+			"type": "shell",
+			"command": "xcodebuild",
+			"args": [
+				"-project",
+				"FacePay Terminal.xcodeproj",
+				"-scheme",
+				"FacePay Terminal",
+				"-destination",
+				"platform=iOS Simulator,name=iPhone 15",
+				"build"
+			],
+			"group": "build",
+			"problemMatcher": [
+				"$gcc"
+			],
+			"isBackground": false
+		}
+	]
+}

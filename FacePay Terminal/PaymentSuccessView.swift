@@ -6,55 +6,76 @@
 //
 
 import SwiftUI
+import MessageUI
 
 struct PaymentSuccessView: View {
     let amount: String
     let customerName: String
+    let paymentMethod: TransactionType
     let onNewTransaction: () -> Void
     
+    @StateObject private var emailService = EmailService()
+    @State private var showEmailComposer = false
+    @State private var customerEmail = "customer@example.com"
+    @State private var showEmailInput = false
     @State private var showCheckmark = false
     @State private var showDetails = false
     
+    private var receipt: Receipt {
+        Receipt(
+            transactionId: generateTransactionId(),
+            amount: Double(amount) ?? 0,
+            customerName: customerName,
+            paymentMethod: paymentMethod,
+            timestamp: Date(),
+            merchantName: Receipt.defaultMerchant,
+            merchantId: Receipt.defaultMerchantId
+        )
+    }
+    
     var body: some View {
-        VStack(spacing: 30) {
+        VStack(spacing: 0) {
             Spacer()
             
             // Success Animation
             VStack(spacing: 20) {
                 ZStack {
                     Circle()
-                        .fill(Color.green.opacity(0.2))
-                        .frame(width: 150, height: 150)
+                        .fill(Color.yellow.opacity(0.2))
+                        .frame(width: 140, height: 140)
                         .scaleEffect(showCheckmark ? 1.0 : 0.5)
                         .animation(.easeOut(duration: 0.5), value: showCheckmark)
                     
                     Circle()
-                        .fill(Color.green)
-                        .frame(width: 120, height: 120)
+                        .fill(Color.yellow)
+                        .frame(width: 110, height: 110)
                         .scaleEffect(showCheckmark ? 1.0 : 0.5)
                         .animation(.easeOut(duration: 0.5).delay(0.1), value: showCheckmark)
                     
                     Image(systemName: "checkmark")
-                        .font(.system(size: 50, weight: .bold))
-                        .foregroundColor(.white)
+                        .font(.system(size: 40, weight: .bold))
+                        .foregroundColor(.black)
                         .scaleEffect(showCheckmark ? 1.0 : 0.1)
                         .animation(.easeOut(duration: 0.5).delay(0.3), value: showCheckmark)
                 }
                 
                 Text("Payment Successful!")
-                    .font(.title)
+                    .font(.title2)
                     .fontWeight(.bold)
-                    .foregroundColor(.green)
+                    .foregroundColor(.primary)
                     .opacity(showDetails ? 1.0 : 0.0)
                     .animation(.easeIn(duration: 0.5).delay(0.6), value: showDetails)
             }
             
+            Spacer()
+            
             // Transaction Details
-            VStack(spacing: 20) {
+            VStack(spacing: 0) {
                 TransactionDetailRow(
                     label: "Amount",
                     value: "RM \(formatAmount(amount))",
-                    valueColor: .primary
+                    valueColor: .primary,
+                    isAmount: true
                 )
                 
                 TransactionDetailRow(
@@ -65,13 +86,13 @@ struct PaymentSuccessView: View {
                 
                 TransactionDetailRow(
                     label: "Payment Method",
-                    value: "FacePay",
-                    valueColor: .green
+                    value: paymentMethod.rawValue,
+                    valueColor: .yellow
                 )
                 
                 TransactionDetailRow(
                     label: "Transaction ID",
-                    value: generateTransactionId(),
+                    value: receipt.transactionId,
                     valueColor: .secondary
                 )
                 
@@ -83,60 +104,73 @@ struct PaymentSuccessView: View {
                 
                 TransactionDetailRow(
                     label: "Status",
-                    value: "Completed",
-                    valueColor: .green
+                    value: "✓ Completed",
+                    valueColor: .green,
+                    isLast: true
                 )
             }
-            .padding()
-            .background(Color.gray.opacity(0.1))
+            .padding(.horizontal, 20)
+            .padding(.vertical, 20)
+            .background(Color.gray.opacity(0.05))
             .cornerRadius(16)
+            .padding(.horizontal, 20)
             .opacity(showDetails ? 1.0 : 0.0)
             .animation(.easeIn(duration: 0.5).delay(0.8), value: showDetails)
             
             Spacer()
             
             // Action Buttons
-            VStack(spacing: 15) {
+            VStack(spacing: 12) {
+                // Email Receipt Button
                 Button(action: {
-                    // In a real app, this would print a receipt
-                    print("Printing receipt...")
+                    if emailService.canSendEmail {
+                        showEmailInput = true
+                    } else {
+                        // Show alert that email is not configured
+                        print("Email not configured on this device")
+                    }
                 }) {
-                    HStack {
-                        Image(systemName: "printer")
-                        Text("Print Receipt")
+                    HStack(spacing: 8) {
+                        Image(systemName: "envelope")
+                        Text("Email Receipt")
                     }
                     .font(.headline)
-                    .foregroundColor(.blue)
+                    .fontWeight(.medium)
+                    .foregroundColor(.yellow)
                     .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.blue.opacity(0.1))
-                    .cornerRadius(12)
+                    .frame(height: 50)
+                    .background(Color.yellow.opacity(0.1))
+                    .cornerRadius(25)
                     .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color.blue, lineWidth: 1)
+                        RoundedRectangle(cornerRadius: 25)
+                            .stroke(Color.yellow, lineWidth: 1)
                     )
                 }
                 
+                // New Transaction Button
                 Button(action: onNewTransaction) {
-                    HStack {
+                    HStack(spacing: 8) {
                         Image(systemName: "plus.circle.fill")
                         Text("New Transaction")
                     }
                     .font(.headline)
                     .fontWeight(.semibold)
-                    .foregroundColor(.white)
+                    .foregroundColor(.black)
                     .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.blue)
-                    .cornerRadius(12)
+                    .frame(height: 50)
+                    .background(Color.yellow)
+                    .cornerRadius(25)
                 }
             }
+            .padding(.horizontal, 20)
             .opacity(showDetails ? 1.0 : 0.0)
             .animation(.easeIn(duration: 0.5).delay(1.0), value: showDetails)
             
+            Spacer()
+            
             // Thank You Message
-            VStack(spacing: 5) {
-                Text("Thank you for using FacePay")
+            VStack(spacing: 6) {
+                Text("Thank you for using FacePay Terminal")
                     .font(.subheadline)
                     .fontWeight(.medium)
                 
@@ -146,13 +180,35 @@ struct PaymentSuccessView: View {
             }
             .opacity(showDetails ? 1.0 : 0.0)
             .animation(.easeIn(duration: 0.5).delay(1.2), value: showDetails)
+            .padding(.bottom, 30)
         }
-        .padding()
         .onAppear {
             showCheckmark = true
             
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 showDetails = true
+            }
+        }
+        .alert("Enter Customer Email", isPresented: $showEmailInput) {
+            TextField("Email address", text: $customerEmail)
+                .keyboardType(.emailAddress)
+                .autocapitalization(.none)
+            
+            Button("Send Receipt") {
+                showEmailComposer = true
+            }
+            
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("Enter the customer's email address to send the receipt")
+        }
+        .sheet(isPresented: $showEmailComposer) {
+            if emailService.canSendEmail {
+                EmailComposerView(
+                    receipt: receipt,
+                    customerEmail: customerEmail,
+                    isPresented: $showEmailComposer
+                )
             }
         }
     }
@@ -180,20 +236,28 @@ struct TransactionDetailRow: View {
     let label: String
     let value: String
     let valueColor: Color
+    var isAmount: Bool = false
+    var isLast: Bool = false
     
     var body: some View {
-        HStack {
-            Text(label)
-                .font(.subheadline)
-                .foregroundColor(.secondary)
+        VStack(spacing: 0) {
+            HStack {
+                Text(label)
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                
+                Spacer()
+                
+                Text(value)
+                    .font(isAmount ? .headline : .subheadline)
+                    .fontWeight(isAmount ? .bold : .medium)
+                    .foregroundColor(valueColor)
+            }
+            .padding(.vertical, 12)
             
-            Spacer()
-            
-            Text(value)
-                .font(.subheadline)
-                .fontWeight(.medium)
-                .foregroundColor(valueColor)
+            if !isLast {
+                Divider()
+            }
         }
-        .padding(.vertical, 2)
     }
 }

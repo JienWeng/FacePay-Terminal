@@ -10,141 +10,88 @@ import SwiftUI
 struct PaymentMethodView: View {
     let amount: String
     let onFacePaySelected: () -> Void
+    let onCardPaymentSelected: () -> Void
     let onBackPressed: () -> Void
     
     var body: some View {
-        VStack(spacing: 30) {
+        VStack(spacing: 0) {
             // Header
-            VStack(spacing: 10) {
+            VStack(spacing: 16) {
                 HStack {
                     Button(action: onBackPressed) {
-                        HStack {
+                        HStack(spacing: 6) {
                             Image(systemName: "chevron.left")
+                                .font(.headline)
                             Text("Back")
+                                .font(.headline)
                         }
-                        .foregroundColor(.blue)
+                        .foregroundColor(.yellow)
                     }
                     
                     Spacer()
                 }
                 
-                Text("Select Payment Method")
-                    .font(.title)
-                    .fontWeight(.bold)
-                
-                Text("Amount: RM \(formatAmount(amount))")
-                    .font(.title2)
-                    .foregroundColor(.blue)
-                    .fontWeight(.semibold)
+                VStack(spacing: 8) {
+                    Text("Select Payment Method")
+                        .font(.title2)
+                        .fontWeight(.bold)
+                    
+                    Text("Amount: RM \(formatAmount(amount))")
+                        .font(.title3)
+                        .foregroundColor(.yellow)
+                        .fontWeight(.semibold)
+                }
             }
-            
-            Spacer()
+            .padding(.horizontal, 20)
+            .padding(.top, 20)
+            .padding(.bottom, 30)
             
             // Payment Methods
-            VStack(spacing: 20) {
+            VStack(spacing: 16) {
                 // FacePay Option
-                Button(action: onFacePaySelected) {
-                    HStack(spacing: 20) {
-                        Image(systemName: "faceid")
-                            .font(.system(size: 40))
-                            .foregroundColor(.green)
-                        
-                        VStack(alignment: .leading, spacing: 5) {
-                            Text("FacePay")
-                                .font(.title2)
-                                .fontWeight(.semibold)
-                            
-                            Text("Pay with facial recognition")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                        }
-                        
-                        Spacer()
-                        
-                        Image(systemName: "chevron.right")
-                            .font(.title3)
-                            .foregroundColor(.secondary)
-                    }
-                    .padding(20)
-                    .background(Color.green.opacity(0.1))
-                    .cornerRadius(16)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 16)
-                            .stroke(Color.green.opacity(0.3), lineWidth: 2)
-                    )
-                }
-                .buttonStyle(PlainButtonStyle())
+                PaymentMethodCard(
+                    icon: "faceid",
+                    title: "FacePay",
+                    subtitle: "Pay with facial recognition",
+                    iconColor: .yellow,
+                    backgroundColor: Color.yellow.opacity(0.1),
+                    borderColor: Color.yellow.opacity(0.3),
+                    action: onFacePaySelected
+                )
                 
-                // Card Payment Option (Disabled for demo)
-                HStack(spacing: 20) {
-                    Image(systemName: "creditcard")
-                        .font(.system(size: 40))
-                        .foregroundColor(.gray)
-                    
-                    VStack(alignment: .leading, spacing: 5) {
-                        Text("Card Payment")
-                            .font(.title2)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.gray)
-                        
-                        Text("Insert or tap your card")
-                            .font(.subheadline)
-                            .foregroundColor(.gray)
-                    }
-                    
-                    Spacer()
-                    
-                    Text("Coming Soon")
-                        .font(.caption)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(Color.gray.opacity(0.2))
-                        .cornerRadius(8)
-                        .foregroundColor(.gray)
-                }
-                .padding(20)
-                .background(Color.gray.opacity(0.1))
-                .cornerRadius(16)
+                // Card Payment Option
+                PaymentMethodCard(
+                    icon: "creditcard",
+                    title: "Card Payment",
+                    subtitle: "Insert or tap your card",
+                    iconColor: .blue,
+                    backgroundColor: Color.blue.opacity(0.1),
+                    borderColor: Color.blue.opacity(0.3),
+                    action: onCardPaymentSelected
+                )
                 
-                // Digital Wallet Option (Disabled for demo)
-                HStack(spacing: 20) {
-                    Image(systemName: "iphone")
-                        .font(.system(size: 40))
-                        .foregroundColor(.gray)
-                    
-                    VStack(alignment: .leading, spacing: 5) {
-                        Text("Digital Wallet")
-                            .font(.title2)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.gray)
-                        
-                        Text("Pay with mobile wallet")
-                            .font(.subheadline)
-                            .foregroundColor(.gray)
-                    }
-                    
-                    Spacer()
-                    
-                    Text("Coming Soon")
-                        .font(.caption)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(Color.gray.opacity(0.2))
-                        .cornerRadius(8)
-                        .foregroundColor(.gray)
-                }
-                .padding(20)
-                .background(Color.gray.opacity(0.1))
-                .cornerRadius(16)
+                // Digital Wallet Option (Disabled)
+                PaymentMethodCard(
+                    icon: "iphone",
+                    title: "Digital Wallet",
+                    subtitle: "Pay with mobile wallet",
+                    iconColor: .gray,
+                    backgroundColor: Color.gray.opacity(0.1),
+                    borderColor: Color.gray.opacity(0.3),
+                    isDisabled: true,
+                    badgeText: "Coming Soon"
+                )
             }
+            .padding(.horizontal, 20)
             
             Spacer()
             
             // Security Notice
-            VStack(spacing: 10) {
-                HStack {
+            VStack(spacing: 8) {
+                HStack(spacing: 8) {
                     Image(systemName: "lock.shield")
-                        .foregroundColor(.green)
+                        .foregroundColor(.yellow)
+                        .font(.subheadline)
                     
                     Text("Secure Payment")
                         .font(.subheadline)
@@ -156,11 +103,13 @@ struct PaymentMethodView: View {
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
             }
-            .padding()
-            .background(Color.green.opacity(0.1))
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+            .background(Color.yellow.opacity(0.1))
             .cornerRadius(12)
+            .padding(.horizontal, 20)
+            .padding(.bottom, 30)
         }
-        .padding()
     }
     
     private func formatAmount(_ amount: String) -> String {
@@ -168,5 +117,95 @@ struct PaymentMethodView: View {
             return String(format: "%.2f", doubleValue)
         }
         return amount
+    }
+}
+
+struct PaymentMethodCard: View {
+    let icon: String
+    let title: String
+    let subtitle: String
+    let iconColor: Color
+    let backgroundColor: Color
+    let borderColor: Color
+    var isDisabled: Bool = false
+    var badgeText: String? = nil
+    let action: (() -> Void)?
+    
+    @State private var isPressed = false
+    
+    init(icon: String, title: String, subtitle: String, iconColor: Color, backgroundColor: Color, borderColor: Color, isDisabled: Bool = false, badgeText: String? = nil, action: (() -> Void)? = nil) {
+        self.icon = icon
+        self.title = title
+        self.subtitle = subtitle
+        self.iconColor = iconColor
+        self.backgroundColor = backgroundColor
+        self.borderColor = borderColor
+        self.isDisabled = isDisabled
+        self.badgeText = badgeText
+        self.action = action
+    }
+    
+    var body: some View {
+        Button(action: {
+            guard !isDisabled, let action = action else { return }
+            action()
+            
+            // Haptic feedback
+            let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+            impactFeedback.impactOccurred()
+        }) {
+            HStack(spacing: 16) {
+                Image(systemName: icon)
+                    .font(.system(size: 28))
+                    .foregroundColor(isDisabled ? .gray : iconColor)
+                    .frame(width: 44, height: 44)
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title)
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(isDisabled ? .gray : .primary)
+                    
+                    Text(subtitle)
+                        .font(.subheadline)
+                        .foregroundColor(isDisabled ? .gray : .secondary)
+                }
+                
+                Spacer()
+                
+                if let badgeText = badgeText {
+                    Text(badgeText)
+                        .font(.caption)
+                        .fontWeight(.medium)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.gray.opacity(0.2))
+                        .cornerRadius(8)
+                        .foregroundColor(.gray)
+                } else {
+                    Image(systemName: "chevron.right")
+                        .font(.headline)
+                        .foregroundColor(isDisabled ? .gray : .secondary)
+                }
+            }
+            .padding(20)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(isDisabled ? Color.gray.opacity(0.1) : backgroundColor)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(isDisabled ? Color.gray.opacity(0.3) : borderColor, lineWidth: 1)
+                    )
+            )
+        }
+        .buttonStyle(PlainButtonStyle())
+        .disabled(isDisabled)
+        .scaleEffect(isPressed ? 0.98 : 1.0)
+        .onLongPressGesture(minimumDuration: 0, maximumDistance: .infinity, pressing: { pressing in
+            guard !isDisabled else { return }
+            withAnimation(.easeInOut(duration: 0.1)) {
+                isPressed = pressing
+            }
+        }, perform: {})
     }
 }

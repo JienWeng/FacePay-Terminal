@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import AVFoundation
 
 struct FaceScanView: View {
     @ObservedObject var faceRecognition: FaceRecognitionService
@@ -14,148 +15,140 @@ struct FaceScanView: View {
     let onCancel: () -> Void
     
     var body: some View {
-        VStack(spacing: 30) {
-            // Header
-            VStack(spacing: 10) {
+        ZStack {
+            // Full screen camera view
+            CameraPreviewView(faceRecognition: faceRecognition)
+                .edgesIgnoringSafeArea(.all)
+            
+            VStack {
+                // Top controls
                 HStack {
                     Button(action: onCancel) {
-                        HStack {
+                        HStack(spacing: 6) {
                             Image(systemName: "chevron.left")
-                            Text("Cancel")
+                            Text("Back")
                         }
-                        .foregroundColor(.blue)
+                        .font(.headline)
+                        .foregroundColor(.white)
+                        .padding(12)
+                        .background(Color.black.opacity(0.6))
+                        .cornerRadius(20)
                     }
                     
                     Spacer()
-                }
-                
-                Text("FacePay Authentication")
-                    .font(.title)
-                    .fontWeight(.bold)
-                
-                Text("Amount: RM \(formatAmount(amount))")
-                    .font(.title2)
-                    .foregroundColor(.blue)
-                    .fontWeight(.semibold)
-            }
-            
-            // Face Scanning Area
-            VStack(spacing: 20) {
-                Text("Please look into the camera")
-                    .font(.headline)
-                    .foregroundColor(.secondary)
-                
-                ZStack {
-                    // Camera preview placeholder
-                    RoundedRectangle(cornerRadius: 20)
-                        .fill(Color.black)
-                        .frame(width: 300, height: 400)
                     
-                    // Face outline overlay
-                    FaceOutlineView(
-                        isScanning: faceRecognition.isScanning,
-                        progress: faceRecognition.scanningProgress
-                    )
-                    
-                    if !faceRecognition.isScanning && faceRecognition.detectedCustomerName == nil {
-                        VStack(spacing: 15) {
-                            Image(systemName: "faceid")
-                                .font(.system(size: 60))
-                                .foregroundColor(.white.opacity(0.7))
-                            
-                            Text("Position your face in the frame")
-                                .font(.subheadline)
-                                .foregroundColor(.white.opacity(0.7))
-                                .multilineTextAlignment(.center)
-                        }
-                    }
+                    Text("RM \(formatAmount(amount))")
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .foregroundColor(.white)
+                        .padding(12)
+                        .background(Color.black.opacity(0.6))
+                        .cornerRadius(20)
                 }
+                .padding(.horizontal, 20)
+                .padding(.top, 20)
                 
-                // Scanning Status
-                if faceRecognition.isScanning {
-                    VStack(spacing: 10) {
-                        ProgressView(value: faceRecognition.scanningProgress)
-                            .progressViewStyle(LinearProgressViewStyle(tint: .green))
-                            .frame(width: 250)
-                        
-                        Text("Scanning face... \(Int(faceRecognition.scanningProgress * 100))%")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                    }
-                } else if let customerName = faceRecognition.detectedCustomerName {
-                    VStack(spacing: 15) {
-                        HStack {
-                            Image(systemName: "checkmark.circle.fill")
-                                .foregroundColor(.green)
-                                .font(.title2)
+                Spacer()
+                
+                // Bottom status
+                VStack(spacing: 20) {
+                    if faceRecognition.isScanning {
+                        VStack(spacing: 12) {
+                            CircularProgressView(progress: faceRecognition.scanningProgress, color: .yellow)
+                                .frame(width: 60, height: 60)
                             
-                            Text("Face recognized!")
-                                .font(.headline)
-                                .foregroundColor(.green)
-                        }
-                        
-                        Text("Customer: \(customerName)")
-                            .font(.title3)
-                            .fontWeight(.semibold)
-                        
-                        Button(action: { onScanComplete(customerName) }) {
-                            Text("Proceed with Payment")
+                            Text("Scanning...")
                                 .font(.headline)
                                 .foregroundColor(.white)
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(Color.green)
-                                .cornerRadius(12)
+                                .padding(12)
+                                .background(Color.black.opacity(0.7))
+                                .cornerRadius(20)
                         }
-                        .frame(width: 250)
+                    } else if let customerName = faceRecognition.detectedCustomerName {
+                        VStack(spacing: 16) {
+                            HStack(spacing: 8) {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundColor(.green)
+                                    .font(.title2)
+                                
+                                Text("Face Recognized!")
+                                    .font(.headline)
+                                    .foregroundColor(.white)
+                            }
+                            .padding(12)
+                            .background(Color.black.opacity(0.7))
+                            .cornerRadius(20)
+                            
+                            Text("\(customerName)")
+                                .font(.title3)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.white)
+                                .padding(12)
+                                .background(Color.black.opacity(0.7))
+                                .cornerRadius(20)
+                            
+                            Button(action: { onScanComplete(customerName) }) {
+                                Text("Continue")
+                                    .font(.headline)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.black)
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 50)
+                                    .background(Color.yellow)
+                                    .cornerRadius(25)
+                            }
+                            .padding(.horizontal, 40)
+                        }
+                    } else if faceRecognition.faceDetected && !faceRecognition.isScanning {
+                        Button(action: {
+                            faceRecognition.startFaceScanning()
+                        }) {
+                            Text("Scan Face")
+                                .font(.headline)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.black)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 50)
+                                .background(Color.yellow)
+                                .cornerRadius(25)
+                        }
+                        .padding(.horizontal, 40)
+                    } else if !faceRecognition.cameraPermissionGranted {
+                        Button(action: {
+                            faceRecognition.requestCameraPermission()
+                        }) {
+                            Text("Allow Camera")
+                                .font(.headline)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.black)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 50)
+                                .background(Color.yellow)
+                                .cornerRadius(25)
+                        }
+                        .padding(.horizontal, 40)
                     }
-                    .padding()
-                    .background(Color.green.opacity(0.1))
-                    .cornerRadius(15)
                 }
+                .padding(.bottom, 50)
             }
             
-            Spacer()
-            
-            // Start Scan Button
-            if !faceRecognition.isScanning && faceRecognition.detectedCustomerName == nil {
-                Button(action: {
-                    faceRecognition.startFaceScanning()
-                }) {
-                    HStack {
-                        Image(systemName: "camera.fill")
-                        Text("Start Face Scan")
-                            .fontWeight(.semibold)
-                    }
-                    .font(.headline)
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.blue)
-                    .cornerRadius(12)
-                }
+            // Face detection indicator
+            if faceRecognition.faceDetected {
+                RoundedRectangle(cornerRadius: 20)
+                    .stroke(Color.yellow, lineWidth: 4)
+                    .frame(width: 250, height: 300)
+                    .animation(.easeInOut(duration: 0.5), value: faceRecognition.faceDetected)
             }
-            
-            // Security Notice
-            VStack(spacing: 5) {
-                HStack {
-                    Image(systemName: "eye.slash")
-                        .foregroundColor(.blue)
-                    Text("Privacy Protected")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                }
-                
-                Text("Face data is processed locally and not stored")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-            }
-            .padding()
-            .background(Color.blue.opacity(0.1))
-            .cornerRadius(12)
         }
-        .padding()
+        .onAppear {
+            // Setup camera permissions and initialize camera first
+            faceRecognition.requestCameraPermission()
+            
+            // Small delay to ensure camera permission is processed
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                faceRecognition.startFaceScanning()
+            }
+        }
         .onDisappear {
             faceRecognition.stopFaceScanning()
         }
@@ -169,34 +162,31 @@ struct FaceScanView: View {
     }
 }
 
-struct FaceOutlineView: View {
-    let isScanning: Bool
-    let progress: Double
+struct CameraPreviewView: UIViewRepresentable {
+    let faceRecognition: FaceRecognitionService
     
-    var body: some View {
-        ZStack {
-            // Face outline
-            RoundedRectangle(cornerRadius: 120)
-                .stroke(
-                    isScanning ? Color.green : Color.white.opacity(0.7),
-                    lineWidth: 3
-                )
-                .frame(width: 200, height: 240)
-            
-            // Scanning animation
-            if isScanning {
-                RoundedRectangle(cornerRadius: 120)
-                    .stroke(Color.green.opacity(0.3), lineWidth: 1)
-                    .frame(width: 200, height: 240)
-                    .scaleEffect(1 + progress * 0.1)
-                    .opacity(1 - progress)
-                
-                // Scanning line
-                Rectangle()
-                    .fill(Color.green.opacity(0.7))
-                    .frame(width: 180, height: 2)
-                    .offset(y: -120 + (240 * progress))
+    func makeUIView(context: Context) -> UIView {
+        let view = UIView()
+        view.backgroundColor = .clear // Remove black background
+        
+        // Add the preview layer immediately if available
+        if let previewLayer = faceRecognition.getPreviewLayer() {
+            previewLayer.frame = view.bounds
+            previewLayer.videoGravity = .resizeAspectFill
+            view.layer.addSublayer(previewLayer)
+        }
+        
+        return view
+    }
+    
+    func updateUIView(_ uiView: UIView, context: Context) {
+        // Ensure preview layer is properly set up and sized
+        if let previewLayer = faceRecognition.getPreviewLayer() {
+            if previewLayer.superlayer == nil {
+                uiView.layer.addSublayer(previewLayer)
             }
+            previewLayer.frame = uiView.bounds
+            previewLayer.videoGravity = .resizeAspectFill
         }
     }
 }

@@ -14,20 +14,22 @@ struct ContentView: View {
     @State private var currentView: AppView = .amountEntry
     @State private var enteredAmount: String = ""
     @State private var detectedCustomer: String = ""
+    @State private var selectedPaymentMethod: TransactionType = .facePay
     
     enum AppView {
         case amountEntry
         case paymentMethod
         case faceScanning
+        case cardPayment
         case processing
         case success
     }
     
     var body: some View {
-        NavigationView {
+        GeometryReader { geometry in
             ZStack {
                 // Background
-                Color.gray.opacity(0.05)
+                Color.gray.opacity(0.02)
                     .ignoresSafeArea()
                 
                 // Main Content
@@ -36,7 +38,9 @@ struct ContentView: View {
                     AmountEntryView(
                         amount: $enteredAmount,
                         onContinue: {
-                            currentView = .paymentMethod
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                currentView = .paymentMethod
+                            }
                         }
                     )
                     
@@ -44,10 +48,21 @@ struct ContentView: View {
                     PaymentMethodView(
                         amount: enteredAmount,
                         onFacePaySelected: {
-                            currentView = .faceScanning
+                            selectedPaymentMethod = .facePay
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                currentView = .faceScanning
+                            }
+                        },
+                        onCardPaymentSelected: {
+                            selectedPaymentMethod = .cardPayment
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                currentView = .cardPayment
+                            }
                         },
                         onBackPressed: {
-                            currentView = .amountEntry
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                currentView = .amountEntry
+                            }
                         }
                     )
                     
@@ -57,10 +72,30 @@ struct ContentView: View {
                         amount: enteredAmount,
                         onScanComplete: { customerName in
                             detectedCustomer = customerName
-                            currentView = .processing
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                currentView = .processing
+                            }
                         },
                         onCancel: {
-                            currentView = .paymentMethod
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                currentView = .paymentMethod
+                            }
+                        }
+                    )
+                    
+                case .cardPayment:
+                    CardPaymentView(
+                        amount: enteredAmount,
+                        onPaymentComplete: { customerName in
+                            detectedCustomer = customerName
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                currentView = .processing
+                            }
+                        },
+                        onCancel: {
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                currentView = .paymentMethod
+                            }
                         }
                     )
                     
@@ -69,11 +104,16 @@ struct ContentView: View {
                         paymentService: paymentService,
                         amount: enteredAmount,
                         customerName: detectedCustomer,
+                        paymentMethod: selectedPaymentMethod,
                         onPaymentComplete: {
-                            currentView = .success
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                currentView = .success
+                            }
                         },
                         onPaymentFailed: {
-                            currentView = .paymentMethod
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                currentView = .paymentMethod
+                            }
                         }
                     )
                     
@@ -81,23 +121,29 @@ struct ContentView: View {
                     PaymentSuccessView(
                         amount: enteredAmount,
                         customerName: detectedCustomer,
+                        paymentMethod: selectedPaymentMethod,
                         onNewTransaction: {
-                            resetTransaction()
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                resetTransaction()
+                            }
                         }
                     )
                 }
             }
         }
-        .navigationViewStyle(StackNavigationViewStyle())
+        .preferredColorScheme(.light) // Force light mode for better yellow visibility
     }
     
     private func resetTransaction() {
         enteredAmount = ""
         detectedCustomer = ""
+        selectedPaymentMethod = .facePay
         currentView = .amountEntry
         paymentService.resetPayment()
         faceRecognitionService.detectedCustomerName = nil
         faceRecognitionService.scanningProgress = 0.0
+        faceRecognitionService.faceDetected = false
+        faceRecognitionService.isScanning = false
     }
 }
 

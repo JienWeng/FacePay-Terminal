@@ -19,80 +19,91 @@ struct AmountEntryView: View {
     ]
     
     var body: some View {
-        VStack(spacing: 30) {
-            // Header
-            VStack(spacing: 10) {
-                Image(systemName: "creditcard.fill")
-                    .font(.system(size: 60))
-                    .foregroundColor(.blue)
-                
-                Text("FacePay Terminal")
-                    .font(.title)
-                    .fontWeight(.bold)
-                
-                Text("Enter Payment Amount")
-                    .font(.headline)
-                    .foregroundColor(.secondary)
-            }
-            
-            // Amount Display
-            VStack(spacing: 15) {
-                Text("Amount (MYR)")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                
-                HStack {
-                    Text("RM")
-                        .font(.title2)
-                        .fontWeight(.medium)
+        GeometryReader { geometry in
+            VStack(spacing: 0) {
+                // Header
+                VStack(spacing: 12) {
+                    Image(systemName: "creditcard.trianglebadge.exclamationmark")
+                        .font(.system(size: 40))
+                        .foregroundColor(.yellow)
                     
-                    Text(formatAmount(amount))
-                        .font(.system(size: 48, weight: .bold, design: .monospaced))
+                    Text("FacePay Terminal")
+                        .font(.title2)
+                        .fontWeight(.bold)
                         .foregroundColor(.primary)
-                        .frame(minWidth: 200, alignment: .trailing)
                 }
-                .padding()
-                .background(Color.gray.opacity(0.1))
-                .cornerRadius(12)
-            }
-            
-            // Keypad
-            VStack(spacing: 15) {
-                ForEach(keypadButtons, id: \.self) { row in
-                    HStack(spacing: 15) {
-                        ForEach(row, id: \.self) { button in
-                            KeypadButton(
-                                text: button,
-                                action: { handleKeypadInput(button) }
+                .padding(.top, 20)
+                .padding(.bottom, 30)
+                
+                // Amount Display
+                VStack(spacing: 8) {
+                    Text("Enter Amount")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                    
+                    HStack(spacing: 4) {
+                        Text("RM")
+                            .font(.title3)
+                            .fontWeight(.medium)
+                            .foregroundColor(.yellow)
+                        
+                        Text(formatAmount(amount))
+                            .font(.system(size: 36, weight: .bold, design: .monospaced))
+                            .foregroundColor(.primary)
+                            .minimumScaleFactor(0.5)
+                            .lineLimit(1)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 20)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.yellow.opacity(0.1))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(Color.yellow.opacity(0.3), lineWidth: 1)
                             )
-                        }
+                    )
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
+                
+                // Keypad
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 3), spacing: 12) {
+                    ForEach(keypadButtons.flatMap { $0 }, id: \.self) { button in
+                        KeypadButton(
+                            text: button,
+                            action: { handleKeypadInput(button) }
+                        )
+                        .frame(height: min(65, geometry.size.height * 0.08))
                     }
                 }
-            }
-            
-            Spacer()
-            
-            // Continue Button
-            Button(action: onContinue) {
-                HStack {
-                    Text("Continue")
-                        .font(.title2)
-                        .fontWeight(.semibold)
-                    
-                    Image(systemName: "arrow.right.circle.fill")
-                        .font(.title2)
+                .padding(.horizontal, 20)
+                
+                Spacer(minLength: 20)
+                
+                // Continue Button
+                Button(action: onContinue) {
+                    HStack(spacing: 8) {
+                        Text("Continue")
+                            .font(.headline)
+                            .fontWeight(.semibold)
+                        
+                        Image(systemName: "arrow.right.circle.fill")
+                            .font(.headline)
+                    }
+                    .foregroundColor(.black)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 50)
+                    .background(
+                        isValidAmount() ? Color.yellow : Color.gray.opacity(0.3)
+                    )
+                    .cornerRadius(25)
                 }
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 16)
-                .background(
-                    isValidAmount() ? Color.blue : Color.gray
-                )
-                .cornerRadius(12)
+                .disabled(!isValidAmount())
+                .padding(.horizontal, 20)
+                .padding(.bottom, 30)
             }
-            .disabled(!isValidAmount())
         }
-        .padding()
     }
     
     private func handleKeypadInput(_ input: String) {
@@ -114,9 +125,12 @@ struct AmountEntryView: View {
                 }
             }
             
-            // Limit total length
-            if amount.count < 10 {
-                amount += input
+            // Limit total length and amount
+            if amount.count < 8 {
+                let newAmount = amount + input
+                if let doubleValue = Double(newAmount), doubleValue <= 999999.99 {
+                    amount = newAmount
+                }
             }
         }
     }
@@ -135,26 +149,42 @@ struct AmountEntryView: View {
     
     private func isValidAmount() -> Bool {
         guard let doubleValue = Double(amount) else { return false }
-        return doubleValue > 0 && doubleValue <= 99999.99
+        return doubleValue > 0 && doubleValue <= 999999.99
     }
 }
 
 struct KeypadButton: View {
     let text: String
     let action: () -> Void
+    @State private var isPressed = false
     
     var body: some View {
-        Button(action: action) {
+        Button(action: {
+            action()
+            // Haptic feedback
+            let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+            impactFeedback.impactOccurred()
+        }) {
             Text(text)
-                .font(.title)
+                .font(.title2)
                 .fontWeight(.medium)
                 .foregroundColor(.primary)
-                .frame(width: 80, height: 80)
-                .background(Color.gray.opacity(0.1))
-                .cornerRadius(40)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(isPressed ? Color.yellow.opacity(0.3) : Color.gray.opacity(0.1))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.yellow.opacity(0.2), lineWidth: 1)
+                        )
+                )
         }
         .buttonStyle(PlainButtonStyle())
-        .scaleEffect(1.0)
-        .animation(.easeInOut(duration: 0.1), value: text)
+        .scaleEffect(isPressed ? 0.95 : 1.0)
+        .onLongPressGesture(minimumDuration: 0, maximumDistance: .infinity, pressing: { pressing in
+            withAnimation(.easeInOut(duration: 0.1)) {
+                isPressed = pressing
+            }
+        }, perform: {})
     }
 }

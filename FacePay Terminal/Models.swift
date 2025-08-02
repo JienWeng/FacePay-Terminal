@@ -31,23 +31,24 @@ struct TransactionRecord {
     let status: TransactionStatus
 }
 
-enum TransactionType {
-    case facePay
-    case cardPayment
-    case transfer
+enum TransactionType: String, CaseIterable {
+    case facePay = "FacePay"
+    case cardPayment = "Card Payment"
+    case transfer = "Bank Transfer"
 }
 
-enum TransactionStatus {
-    case pending
-    case completed
-    case failed
-    case fraudDetected
+enum TransactionStatus: String {
+    case pending = "Pending"
+    case completed = "Completed"
+    case failed = "Failed"
+    case fraudDetected = "Fraud Detected"
 }
 
 enum PaymentState: Equatable {
     case enterAmount
     case selectPaymentMethod
     case faceScanning
+    case cardPayment
     case processing
     case verifyingAccount
     case checkingFunds
@@ -55,6 +56,20 @@ enum PaymentState: Equatable {
     case fraudDetection
     case success
     case failure(String)
+}
+
+// MARK: - Receipt Model
+struct Receipt {
+    let transactionId: String
+    let amount: Double
+    let customerName: String
+    let paymentMethod: TransactionType
+    let timestamp: Date
+    let merchantName: String
+    let merchantId: String
+    
+    static let defaultMerchant = "FacePay Terminal"
+    static let defaultMerchantId = "FPT001"
 }
 
 // MARK: - API Response Models
